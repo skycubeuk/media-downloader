@@ -1,3 +1,5 @@
+"""Main script for downloading media using the ParentZone API."""
+
 import os
 import requests
 import time
@@ -5,10 +7,10 @@ import glob
 import logging
 
 # Set up logging
-log_dir = "./log"
-os.makedirs(log_dir, exist_ok=True)
+LOG_DIR = "./log"
+os.makedirs(LOG_DIR, exist_ok=True)
 logging.basicConfig(
-    filename=f"{log_dir}/downloaded_files.log",
+    filename=f"{LOG_DIR}/downloaded_files.log",
     level=logging.INFO,
     format="%(asctime)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
@@ -21,11 +23,11 @@ def get_api_key():
 
     if not api_key:
         if os.path.exists(api_key_file):
-            with open(api_key_file, "r") as file:
+            with open(api_key_file, "r", encoding="utf-8") as file:
                 api_key = file.read().strip()
         else:
             api_key = input("Enter your API key: ").strip()
-            with open(api_key_file, "w") as file:
+            with open(api_key_file, "w", encoding="utf-8") as file:
                 file.write(api_key)
 
     if not api_key:
@@ -39,7 +41,15 @@ def clear_console():
     os.system("cls" if os.name == "nt" else "clear")
 
 def fetch_posts(api_key, base_query):
-    """Fetch posts from the API and return the data."""
+    """Fetch posts from the API and return the data.
+
+    Args:
+        api_key (str): The API key for authentication.
+        base_query (str): The base query string for the API request.
+
+    Returns:
+        list: A list of posts retrieved from the API.
+    """
     cursor = ""
     out_data = []
     iteration = 1
@@ -76,7 +86,14 @@ def fetch_posts(api_key, base_query):
     return out_data
 
 def process_media(posts):
-    """Extract media information from posts."""
+    """Extract media information from posts.
+
+    Args:
+        posts (list): A list of posts containing media information.
+
+    Returns:
+        list: A list of media items extracted from the posts.
+    """
     media_items = []
     for post in posts:
         if "media" in post:
@@ -90,7 +107,13 @@ def process_media(posts):
     return media_items
 
 def download_media(api_key, media_items, output_dir="./out"):
-    """Download media items to the specified directory."""
+    """Download media items to the specified directory.
+
+    Args:
+        api_key (str): The API key for authentication.
+        media_items (list): A list of media items to download.
+        output_dir (str): The directory to save the downloaded media.
+    """
     os.makedirs(output_dir, exist_ok=True)
     for count, media in enumerate(media_items, start=1):
         media_id = media["id"]
@@ -109,7 +132,14 @@ def download_media(api_key, media_items, output_dir="./out"):
         clear_console()
 
 def fetch_gallery(api_key):
-    """Fetch gallery items from the API."""
+    """Fetch gallery items from the API.
+
+    Args:
+        api_key (str): The API key for authentication.
+
+    Returns:
+        list: A list of gallery items retrieved from the API.
+    """
     response = requests.get(
         "https://api.parentzone.me/v1/gallery/",
         headers={"x-api-key": api_key},
@@ -122,6 +152,7 @@ def fetch_gallery(api_key):
         return []
 
 def main():
+    """Main function to execute the media downloader script."""
     api_key = get_api_key()
     base_query = "typeIDs[]=14&typeIDs[]=12"
 
