@@ -1,6 +1,6 @@
 # Media Downloader
 
-This project is a Python script to fetch and download media items and gallery content from the ParentZone API.
+This project is a Python script to fetch and download media items and gallery content from the ParentZone API (parentzone.me).
 
 ## Features
 - Fetch posts and gallery items from the API.
