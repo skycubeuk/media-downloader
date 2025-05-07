@@ -10,7 +10,8 @@ This project is a Python script to fetch and download media items and gallery co
 
 ## Requirements
 - Python 3.7 or higher
-- `requests` library
+- `requests` library (version 2.25.1 or higher)
+- `python-dateutil` library (version 2.9.0 or higher)
 
 ## Setup
 
