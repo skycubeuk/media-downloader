@@ -28,13 +28,31 @@ This project is a Python script to fetch and download media items and gallery co
    ```
 
 3. **Set Up the API Key**:
-   - Create a file named `api_key.txt` in the project directory and paste your API key into it.
-   - Alternatively, set the `API_KEY` environment variable:
-     ```bash
-     export API_KEY=your_api_key
-     ```
+   The script will prompt you to enter your API key if it is not already set in the `config.ini` file or as an environment variable. The key will be saved to the `config.ini` file for future use.
+
+   Alternatively, you can set the `API_KEY` environment variable:
+   ```bash
+   export API_KEY=your_api_key
+   ```
 
    If you don't know how to extract the API key, refer to the [Extracting the API Key](#extracting-the-api-key) section below.
+
+## Configuration
+
+The script uses a `config.ini` file to store configuration settings, including the API key and directory paths. If the API key is not set in the environment or the `config.ini` file, the script will prompt you to enter it and save it automatically.
+
+### Example `config.ini` File
+```ini
+[Credentials]
+api_key=your_api_key
+
+[Paths]
+log_dir=./log
+out_dir=./out
+```
+
+- **`[Credentials]`**: Stores the API key.
+- **`[Paths]`**: Specifies the directories for logs and output files.
 
 ## Usage
 
@@ -70,7 +88,7 @@ To extract the API key from the web application, follow these steps:
    - Copy the value of the `x-api-key` header.
 
 7. **Save the API Key**:
-   - Paste the API key into the `api_key.txt` file or set it as an environment variable.
+   - Paste the API key into the `config.ini` file or set it as an environment variable.
 
 ## License
 
