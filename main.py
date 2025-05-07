@@ -1,10 +1,10 @@
-"""Main script for downloading media using the ParentZone API."""
-
+import json
 import os
 import requests
 import time
 import glob
 import logging
+from dateutil.parser import isoparse
 
 # Set up logging
 LOG_DIR = "./log"
@@ -151,6 +151,43 @@ def fetch_gallery(api_key):
         print(response.text)
         return []
 
+def save_metadata(media_items, metadata_file="./out/metadata.json"):
+    """Save metadata about media items to a JSON file.
+
+    Args:
+        media_items (list): A list of media items to save metadata for.
+        metadata_file (str): The file path to save the metadata.
+    """
+    os.makedirs(os.path.dirname(metadata_file), exist_ok=True)
+    with open(metadata_file, "w", encoding="utf-8") as file:
+        json.dump(media_items, file, indent=4)
+    logging.info(f"Metadata saved to: {metadata_file}")
+
+def process_metadata(metadata_file_path, timestamp_key):
+    print(f"Processing metadata file: {metadata_file_path} with timestamp key: {timestamp_key}")
+    with open(metadata_file_path, "r") as file:
+        metadata = json.load(file)
+
+    for item in metadata:
+        file_id = item.get("id")
+        if not file_id:
+            print("Skipping item with missing 'id'")
+            continue
+
+        jpeg_path = os.path.join("out", f"{file_id}.jpeg")
+        mp4_path = os.path.join("out", f"{file_id}.mp4")
+
+        for path in [jpeg_path, mp4_path]:
+            if os.path.isfile(path):
+                timestamp = item.get(timestamp_key)
+                if timestamp:
+                    ts = int(isoparse(timestamp).timestamp())
+                    os.utime(path, (ts, ts))
+                    print(f"Updated timestamp for {path} to {ts}")
+                break
+            else:
+                print(f"File not found: {path}")
+
 def main():
     """Main function to execute the media downloader script."""
     api_key = get_api_key()
@@ -165,13 +202,21 @@ def main():
     # Download media items
     download_media(api_key, media_items)
 
+    # Save metadata
+    save_metadata(media_items, metadata_file="./out/posts_metadata.json")
+
     # Fetch and process gallery
     gallery = fetch_gallery(api_key)
+    save_metadata(gallery, metadata_file="./out/gallery_metadata.json")
     gallery_items = [item for item in gallery if not glob.glob(f"./out/{item['id']}.*")]
     print(f"Found {len(gallery_items)} new gallery items.")
     time.sleep(2)
 
     download_media(api_key, gallery_items)
+
+    # Process metadata files
+    process_metadata(os.path.join("out", "posts_metadata.json"), "timestamp")
+    process_metadata(os.path.join("out", "gallery_metadata.json"), "updated")
 
 if __name__ == "__main__":
     main()

@@ -6,6 +6,7 @@ This project is a Python script to fetch and download media items and gallery co
 - Fetch posts and gallery items from the API.
 - Download media files to a local directory.
 - Automatically handles API key retrieval from environment variables or a local file.
+- Updates the creation date on the downloaded files based on the metadata.
 
 ## Requirements
 - Python 3.7 or higher
