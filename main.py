@@ -4,11 +4,19 @@ import requests
 import time
 import glob
 import logging
+import configparser
 from dateutil.parser import isoparse
 
-# Set up logging
-LOG_DIR = "./log"
+# Load configuration
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+LOG_DIR = config.get("Paths", "log_dir", fallback="./log")
+OUT_DIR = config.get("Paths", "out_dir", fallback="./out")
+
 os.makedirs(LOG_DIR, exist_ok=True)
+os.makedirs(OUT_DIR, exist_ok=True)
+
 logging.basicConfig(
     filename=f"{LOG_DIR}/downloaded_files.log",
     level=logging.INFO,
@@ -17,18 +25,19 @@ logging.basicConfig(
 )
 
 def get_api_key():
-    """Retrieve API key from environment or file, or prompt the user."""
     api_key = os.getenv("API_KEY")
-    api_key_file = "./api_key.txt"
+    config_file = "config.ini"
 
     if not api_key:
-        if os.path.exists(api_key_file):
-            with open(api_key_file, "r", encoding="utf-8") as file:
-                api_key = file.read().strip()
+        if config.has_option("Credentials", "api_key"):
+            api_key = config.get("Credentials", "api_key")
         else:
             api_key = input("Enter your API key: ").strip()
-            with open(api_key_file, "w", encoding="utf-8") as file:
-                file.write(api_key)
+            if not config.has_section("Credentials"):
+                config.add_section("Credentials")
+            config.set("Credentials", "api_key", api_key)
+            with open(config_file, "w", encoding="utf-8") as file:
+                config.write(file)
 
     if not api_key:
         print("Error: API key is required.")
@@ -37,19 +46,9 @@ def get_api_key():
     return api_key
 
 def clear_console():
-    """Clear the console in a cross-platform way."""
     os.system("cls" if os.name == "nt" else "clear")
 
 def fetch_posts(api_key, base_query):
-    """Fetch posts from the API and return the data.
-
-    Args:
-        api_key (str): The API key for authentication.
-        base_query (str): The base query string for the API request.
-
-    Returns:
-        list: A list of posts retrieved from the API.
-    """
     cursor = ""
     out_data = []
     iteration = 1
@@ -86,14 +85,6 @@ def fetch_posts(api_key, base_query):
     return out_data
 
 def process_media(posts):
-    """Extract media information from posts.
-
-    Args:
-        posts (list): A list of posts containing media information.
-
-    Returns:
-        list: A list of media items extracted from the posts.
-    """
     media_items = []
     for post in posts:
         if "media" in post:
@@ -106,14 +97,7 @@ def process_media(posts):
                 })
     return media_items
 
-def download_media(api_key, media_items, output_dir="./out"):
-    """Download media items to the specified directory.
-
-    Args:
-        api_key (str): The API key for authentication.
-        media_items (list): A list of media items to download.
-        output_dir (str): The directory to save the downloaded media.
-    """
+def download_media(api_key, media_items, output_dir=OUT_DIR):
     os.makedirs(output_dir, exist_ok=True)
     for count, media in enumerate(media_items, start=1):
         media_id = media["id"]
@@ -132,14 +116,6 @@ def download_media(api_key, media_items, output_dir="./out"):
         clear_console()
 
 def fetch_gallery(api_key):
-    """Fetch gallery items from the API.
-
-    Args:
-        api_key (str): The API key for authentication.
-
-    Returns:
-        list: A list of gallery items retrieved from the API.
-    """
     response = requests.get(
         "https://api.parentzone.me/v1/gallery/",
         headers={"x-api-key": api_key},
@@ -151,13 +127,7 @@ def fetch_gallery(api_key):
         print(response.text)
         return []
 
-def save_metadata(media_items, metadata_file="./out/metadata.json"):
-    """Save metadata about media items to a JSON file.
-
-    Args:
-        media_items (list): A list of media items to save metadata for.
-        metadata_file (str): The file path to save the metadata.
-    """
+def save_metadata(media_items, metadata_file=f"{OUT_DIR}/metadata.json"):
     os.makedirs(os.path.dirname(metadata_file), exist_ok=True)
     with open(metadata_file, "w", encoding="utf-8") as file:
         json.dump(media_items, file, indent=4)
@@ -189,7 +159,6 @@ def process_metadata(metadata_file_path, timestamp_key):
                 print(f"File not found: {path}")
 
 def main():
-    """Main function to execute the media downloader script."""
     api_key = get_api_key()
     base_query = "typeIDs[]=14&typeIDs[]=12"
 
@@ -203,20 +172,20 @@ def main():
     download_media(api_key, media_items)
 
     # Save metadata
-    save_metadata(media_items, metadata_file="./out/posts_metadata.json")
+    save_metadata(media_items, metadata_file=f"{OUT_DIR}/posts_metadata.json")
 
     # Fetch and process gallery
     gallery = fetch_gallery(api_key)
-    save_metadata(gallery, metadata_file="./out/gallery_metadata.json")
-    gallery_items = [item for item in gallery if not glob.glob(f"./out/{item['id']}.*")]
+    save_metadata(gallery, metadata_file=f"{OUT_DIR}/gallery_metadata.json")
+    gallery_items = [item for item in gallery if not glob.glob(f"{OUT_DIR}/{item['id']}.*")]
     print(f"Found {len(gallery_items)} new gallery items.")
     time.sleep(2)
 
     download_media(api_key, gallery_items)
 
     # Process metadata files
-    process_metadata(os.path.join("out", "posts_metadata.json"), "timestamp")
-    process_metadata(os.path.join("out", "gallery_metadata.json"), "updated")
+    process_metadata(os.path.join(OUT_DIR, "posts_metadata.json"), "timestamp")
+    process_metadata(os.path.join(OUT_DIR, "gallery_metadata.json"), "updated")
 
 if __name__ == "__main__":
     main()
